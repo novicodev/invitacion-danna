@@ -4,6 +4,14 @@ const mapEmbed = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.187
 const mapUrl = 'https://maps.app.goo.gl/K4bFehXACxzib5Te6';
 const message = encodeURIComponent('Hola, soy [Tu nombre]. Confirmo mi asistencia a los XV años de Danna Stefania.');
 const phoneNumbers = ['573014610039'];
+const photos = [
+  { src: '/photos/1.jpg', alt: 'Foto 1' },
+  { src: '/photos/2.jpg', alt: 'Foto 2' },
+  { src: '/photos/3.jpg', alt: 'Foto 3' },
+  { src: '/photos/4.jpg', alt: 'Foto 4' },
+  { src: '/photos/5.jpg', alt: 'Foto 5' },
+  { src: '/photos/6.jpg', alt: 'Foto 6' },
+];
 ---
 
 <!doctype html>
@@ -104,7 +112,7 @@ const phoneNumbers = ['573014610039'];
         <div class="venue-copy">
           <p class="eyebrow">El lugar</p>
           <h2>San Angelo Zafiro<br /><em>Salón VIP</em></h2>
-          <address>Calle 33 # 80c - 30<br />Medellín</address>
+          <address>Avenida 33 # 80c - 30<br />Medellín</address>
           <a class="button" href={mapUrl} target="_blank" rel="noreferrer">Cómo llegar <span>↗</span></a>
         </div>
       </section>
@@ -139,6 +147,29 @@ const phoneNumbers = ['573014610039'];
 
         <div class="actions">{phoneNumbers.map((phone) => <a class="button button-light rsvp-link" data-phone={phone} href={`https://wa.me/${phone}?text=${message}`} target="_blank" rel="noreferrer">Confirmar por WhatsApp ↗</a>)}</div>
       </section>
+
+      <section class="gallery section">
+        <p class="eyebrow">Recuerdos</p>
+        <h2 class="gallery-heading">Momentos que<br /><em>nos unen.</em></h2>
+        <div class="gallery-track">
+          {photos.map((photo, i) => (
+            <div class="gallery-item" role="button" tabindex="0" aria-label={`Ver foto ${i + 1}`}
+              data-symbol={['♡', '✦', '◇', '✿', '❋', '✧'][i]}>
+              <img src={photo.src} alt={photo.alt} loading="lazy" onerror="this.style.display='none'" />
+            </div>
+          ))}
+        </div>
+        <div class="gallery-dots">
+          {photos.map((_, i) => (
+            <span class:list={['gallery-dot', { active: i === 0 }]} data-dot={i}></span>
+          ))}
+        </div>
+      </section>
+
+      <div class="lightbox" role="dialog" aria-label="Visor de fotos" hidden>
+        <button class="lightbox-close" aria-label="Cerrar">&times;</button>
+        <img class="lightbox-img" src="" alt="" />
+      </div>
 
       <footer>
         <p class="hashtag">#Mis15Danna · #DANNAXV</p>
@@ -231,6 +262,42 @@ const phoneNumbers = ['573014610039'];
       };
 
       applyGuestPersonalization();
+    </script>
+    <script is:inline>
+      const lightbox = document.querySelector('.lightbox');
+      const lightboxImg = document.querySelector('.lightbox-img');
+      const closeLightbox = () => { lightbox.hidden = true; lightbox.classList.remove('active'); };
+      document.querySelectorAll('.gallery-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const img = item.querySelector('img');
+          lightboxImg.src = img.src; lightboxImg.alt = img.alt;
+          lightbox.hidden = false; lightbox.classList.add('active');
+        });
+        item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
+      });
+      document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !lightbox.hidden) closeLightbox(); });
+      const galleryObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); galleryObserver.unobserve(entry.target); } });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('.gallery-item').forEach((item, i) => { item.style.setProperty('--d', `${i * .08}s`); galleryObserver.observe(item); });
+      const track = document.querySelector('.gallery-track');
+      const dots = document.querySelectorAll('.gallery-dot');
+      const items = document.querySelectorAll('.gallery-item');
+      const updateDots = () => {
+        const scrollLeft = track.scrollLeft;
+        const trackWidth = track.scrollWidth - track.clientWidth;
+        const progress = trackWidth > 0 ? scrollLeft / trackWidth : 0;
+        const active = Math.round(progress * (items.length - 1));
+        dots.forEach((d, i) => d.classList.toggle('active', i === active));
+      };
+      track.addEventListener('scroll', updateDots, { passive: true });
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+          items[i].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        });
+      });
     </script>
     <script is:inline>
       // 🦋 Mariposas SVG con silueta, manchas y aleteo real en 3D.
@@ -417,6 +484,34 @@ footer{background:#091628;color:#7d93b8;text-align:center;padding:3rem 1rem 2.5r
 .hashtag{letter-spacing:.08em;margin:0 0 .4rem}
 .footer-name{font:italic 1.2rem var(--serif);color:#cfe0f7;margin:0}
 
+/* ── 📸 Galería carrusel ──────────────────────────────────── */
+.gallery{background:var(--cream);text-align:center}
+.gallery-heading{font:400 clamp(2.2rem,5vw,3.6rem)/1.1 var(--serif);letter-spacing:-.03em;margin:0 0 2.5rem;color:var(--navy)}
+.gallery-heading em{color:var(--gold)}
+.gallery-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:1rem;padding:0 clamp(1.5rem,8vw,9rem);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.gallery-track::-webkit-scrollbar{display:none}
+.gallery-dots{display:flex;justify-content:center;gap:.5rem;margin-top:2rem}
+.gallery-dot{width:8px;height:8px;border-radius:50%;background:var(--blue-soft);opacity:.3;transition:opacity .3s,transform .3s}
+.gallery-dot.active{opacity:1;transform:scale(1.3)}
+.gallery-item{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;flex:0 0 72vw;max-width:340px;aspect-ratio:3/4;scroll-snap-align:center;box-shadow:8px 8px 0 var(--navy);opacity:0;display:grid;place-items:center;transition:opacity .6s ease var(--d,0s),transform .2s,box-shadow .2s}
+.gallery-item.visible{opacity:1}
+.gallery-item:hover{transform:scale(1.03);box-shadow:10px 10px 0 var(--navy)}
+.gallery-item::after{content:attr(data-symbol);font:clamp(2rem,5vw,3.5rem) var(--serif);color:rgba(39,75,122,.3);z-index:0;pointer-events:none}
+.gallery-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;display:block}
+.gallery-item:nth-child(1){background:linear-gradient(135deg,#9cc3ea,#274b7a)}
+.gallery-item:nth-child(2){background:linear-gradient(135deg,#faf7f2,#9cc3ea)}
+.gallery-item:nth-child(3){background:linear-gradient(135deg,#d9a85c,#e6bd83)}
+.gallery-item:nth-child(4){background:linear-gradient(135deg,#9cc3ea,#d9a85c)}
+.gallery-item:nth-child(5){background:linear-gradient(135deg,#faf7f2,#d9a85c)}
+.gallery-item:nth-child(6){background:linear-gradient(135deg,#274b7a,#0d1f3c)}
+.lightbox{position:fixed;inset:0;z-index:1000;background:rgba(13,31,60,.92);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.lightbox.active{opacity:1;pointer-events:auto}
+.lightbox-img{max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.lightbox-close{position:absolute;top:1.5rem;right:1.5rem;background:none;border:none;color:#faf7f2;font:2rem var(--sans);cursor:pointer;padding:.5rem;line-height:1}
+.lightbox-close:hover{color:var(--gold)}
+@media(max-width:720px){.gallery-item{flex:0 0 80vw;max-width:none}}
+
+/* ── 🦋 Mariposas
 /* ── 🦋 Mariposas ─────────────────────────────────────────── */
 .bf-field{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
 .bf-field-quiet{position:absolute;inset:0;z-index:0;opacity:.9}
